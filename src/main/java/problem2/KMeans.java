@@ -25,19 +25,19 @@ public class KMeans {
   //helper class to store the Points
 
   private static class Point{
-    private int x;
-    private int y;
+    private final double x;
+    private final double y;
 
-    public Point(int x, int y) {
+    public Point(double x, double y) {
       this.x = x;
       this.y = y;
     }
 
-    public int getX() {
+    public double getX() {
       return x;
     }
 
-    public int getY() {
+    public double getY() {
       return y;
     }
 
@@ -64,17 +64,16 @@ public class KMeans {
       FileSystem fs = FileSystem.get(context.getConfiguration());
       FSDataInputStream fis = fs.open(path);
 
-      BufferedReader reader = new BufferedReader(new InputStreamReader(fis,
-              "UTF-8"));
+      BufferedReader reader = new BufferedReader(new InputStreamReader(fis,"UTF-8"));
 
       String line;
       while (StringUtils.isNotEmpty(line = reader.readLine())) {
         String[] pointComponents = line.split(",");
-        int x;
-        int y;
+        double x;
+        double y;
         try {
-          x = Integer.parseInt(pointComponents[0]);
-          y = Integer.parseInt(pointComponents[1]);
+          x = Double.parseDouble(pointComponents[0]);
+          y = Double.parseDouble(pointComponents[1]);
           centroids.add(new Point(x, y));
         }
         catch (NumberFormatException e){
@@ -91,18 +90,18 @@ public class KMeans {
       Point nearestCentroid = null;
       String[] components = value.toString().split(",");
       try {
-        Point currentPoint = new Point(Integer.parseInt(components[0]), Integer.parseInt(components[1]));
-        for (Point p: centroids) {
-          double dist = currentPoint.calculateEuclideanDistance(p);
+        Point currentPoint = new Point(Double.parseDouble(components[0]), Double.parseDouble(components[1]));
+        for (Point centroid: centroids) {
+          double dist = currentPoint.calculateEuclideanDistance(centroid);
           if(dist < lowestDistance) {
             lowestDistance = dist;
-            nearestCentroid = p;
+            nearestCentroid = centroid;
           }
         }
         assert nearestCentroid != null;
         context.write(new Text(nearestCentroid.toString()), new Text(currentPoint.toString()));
       } catch (NumberFormatException e) {
-        System.out.println("not parsable ints, skipped this line");
+//        System.out.println("not parsable ints, skipped this line");
       } catch (NullPointerException e) {
         System.out.println("Point nearestCentroid is null");
       }
@@ -121,12 +120,12 @@ public class KMeans {
       for(Text value: values) {
         numDataPoints++;
         String[] dataPointComponents = value.toString().split(",");
-        int x = Integer.parseInt(dataPointComponents[0]);
-        int y = Integer.parseInt(dataPointComponents[1]);
+        double x = Double.parseDouble(dataPointComponents[0]);
+        double y = Double.parseDouble(dataPointComponents[1]);
         xSum += x;
         ySum += y;
       }
-      Point newCentroid = new Point((int) xSum/numDataPoints, (int) ySum/numDataPoints);
+      Point newCentroid = new Point(xSum/numDataPoints,ySum/numDataPoints);
       context.write(new Text(newCentroid.toString()), key);
     }
   }
