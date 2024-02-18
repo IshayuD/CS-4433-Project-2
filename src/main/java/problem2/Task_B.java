@@ -18,7 +18,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-public class Task_A_Single_Iteration {
+public class Task_B {
 
   //helper class to store the Points
 
@@ -66,7 +66,8 @@ public class Task_A_Single_Iteration {
 
       String line;
       while (StringUtils.isNotEmpty(line = reader.readLine())) {
-        String[] pointComponents = line.split(",");
+        String newCentroid = line.split("\t")[0];
+        String[] pointComponents = newCentroid.split(",");
         double x;
         double y;
         try {
@@ -130,17 +131,28 @@ public class Task_A_Single_Iteration {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
-    Job job = Job.getInstance(conf, "Find centroid");
-    job.setJarByClass(Task_A_Single_Iteration.class);
-    job.setMapperClass(ClosestCentroidMapper.class);
-    job.setReducerClass(NewCentroidCalculatorReducer.class);
-    job.setMapOutputKeyClass(Text.class);
-    job.setMapOutputValueClass(Text.class);
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(Text.class);
-    job.addCacheFile(new URI("file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/data_set/k_centroids.csv"));
-    FileInputFormat.addInputPath(job, new Path("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\data_set\\data_points.csv"));
-    FileOutputFormat.setOutputPath(job, new Path("problem2_output"));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    int iterations = 5;
+
+    for (int i = 0; i < iterations; i++) {
+      Job job = Job.getInstance(conf, "Find centroid " + i);
+      job.setJarByClass(Task_B.class);
+      job.setMapperClass(Task_B.ClosestCentroidMapper.class);
+      job.setReducerClass(Task_B.NewCentroidCalculatorReducer.class);
+      job.setMapOutputKeyClass(Text.class);
+      job.setMapOutputValueClass(Text.class);
+      job.setOutputKeyClass(Text.class);
+      job.setOutputValueClass(Text.class);
+
+      // adding cache file
+      if(i == 0) {
+        job.addCacheFile(new URI("file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/data_set/k_centroids.csv"));
+      } else {
+        job.addCacheFile(new URI("file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/problem2_output/centroids" + (i-1) + "/part-r-00000"));
+      }
+      FileInputFormat.addInputPath(job, new Path("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\data_set\\data_points.csv"));
+      FileOutputFormat.setOutputPath(job, new Path("problem2_output/centroids" + i));
+      job.waitForCompletion(true);
+    }
+//    System.exit(job.waitForCompletion(true) ? 0 : 1);
   }
 }
