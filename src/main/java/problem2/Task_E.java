@@ -133,6 +133,14 @@ public class Task_E {
 
   public static class NewCentroidCalculatorReducer
           extends Reducer<Text,Text,Text,Text> {
+    private double convergenceThreshold;
+    private boolean converged = true;
+
+    @Override
+    protected void setup(Context context) throws IOException, InterruptedException {
+      convergenceThreshold = context.getConfiguration().getDouble("convergenceThreshold", 1.0);
+//      System.out.println("ConvergenceThreshold: " + convergenceThreshold);
+    }
 
     public void reduce(Text key, Iterable<Text> values,
                        Context context
@@ -152,13 +160,29 @@ public class Task_E {
         ySum += y;
       }
       Point newCentroid = new Point(xSum/numDataPoints,ySum/numDataPoints);
+      String[] oldCentroidTokens = key.toString().split(",");
+      Point oldCentroid = new Point(Double.parseDouble(oldCentroidTokens[0]), Double.parseDouble(oldCentroidTokens[1]));
+      if (oldCentroid.calculateEuclideanDistance(newCentroid) > convergenceThreshold) {
+        converged = false;
+      }
       context.write(new Text(newCentroid.toString()), key);
+    }
+
+    @Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+      if (converged) {
+        context.write(new Text("Yes"), new Text(""));
+      } else {
+        context.write(new Text("No"), new Text(""));
+      }
     }
   }
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     int iterations = 20;
+    double convergenceThreshold = 1.0;
+    conf.set("convergenceThreshold", Double.toString(convergenceThreshold));
 
     for (int i = 0; i < iterations; i++) {
       Job job = Job.getInstance(conf, "Find centroid " + i);
@@ -182,7 +206,7 @@ public class Task_E {
       job.waitForCompletion(true);
 
       //checking the convergence after the job completes
-      if (hasConverged("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\problem2_output\\centroids" + (i) + "\\part-r-00000", 1.0)) {
+      if (hasConverged("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\problem2_output\\centroids" + (i) + "\\part-r-00000", convergenceThreshold)) {
         System.out.println("Convergence threshold has been reached at iteration " + (i));
         break;
       }
@@ -196,6 +220,10 @@ public class Task_E {
       Scanner scanner = new Scanner(outputFile);
       while (scanner.hasNextLine()) {
         String line = scanner.nextLine();
+        // to handle the "yes" or "no" at the end of file
+        if(line.split("\t")[0].equalsIgnoreCase("yes") || line.split("\t")[0].equalsIgnoreCase("no")) {
+          break;
+        }
         String[] centroids = line.split("\t");
         String newCentroid = centroids[0];
         String oldCentroid = centroids[1];
