@@ -180,8 +180,20 @@ public class Task_E {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
-    int iterations = 20;
-    double convergenceThreshold = 1.0;
+    int iterations = 20; // max number of iterations parameter here
+    double convergenceThreshold = 1.0; // convergence threshold here
+    /*
+    The returnFinalClusterDataPoints variable below is used to switch between the two different output options
+    designated in subparts a) and b) of Task E. When this variable is set to false, it will only return
+    the most updated centroids along with a flag at the end of either "Yes" or "No" which indicates
+    whether the centroids have converged or not (Task E, part a). When it is set to true, the
+    output will return the centroids along with their associated data points in key-value pairs
+    (Task E, part b).
+     */
+    boolean returnFinalClusterDataPoints = true;
+
+    boolean converged = false;
+    String lastIterationCentroidFilePath = null;
     conf.set("convergenceThreshold", Double.toString(convergenceThreshold));
 
     for (int i = 0; i < iterations; i++) {
@@ -198,8 +210,10 @@ public class Task_E {
       // adding cache file
       if(i == 0) {
         job.addCacheFile(new URI("file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/data_set/k_centroids.csv"));
+        lastIterationCentroidFilePath = "file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/data_set/k_centroids.csv";
       } else {
         job.addCacheFile(new URI("file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/problem2_output/centroids" + (i-1) + "/part-r-00000"));
+        lastIterationCentroidFilePath = "file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/problem2_output/centroids" + (i-1) + "/part-r-00000";
       }
       FileInputFormat.addInputPath(job, new Path("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\data_set\\data_points.csv"));
       FileOutputFormat.setOutputPath(job, new Path("problem2_output/centroids" + i));
@@ -208,10 +222,31 @@ public class Task_E {
       //checking the convergence after the job completes
       if (hasConverged("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\problem2_output\\centroids" + (i) + "\\part-r-00000", convergenceThreshold)) {
         System.out.println("Convergence threshold has been reached at iteration " + (i));
+        converged = true;
         break;
       }
     }
-//    System.exit(job.waitForCompletion(true) ? 0 : 1);
+
+    // final map-only job to output the key-value pairs of
+    // (new centroid computed in the very last iteration, point coord in the same cluster)
+    // when returnFinalClusterDataPoints is true
+    if (converged && returnFinalClusterDataPoints) {
+      Job job = Job.getInstance(conf, "Output final cluster data points");
+      job.setJarByClass(Task_E.class);
+      job.setMapperClass(Task_E.ClosestCentroidMapper.class);
+      job.setMapOutputKeyClass(Text.class);
+      job.setMapOutputValueClass(Text.class);
+      job.setOutputKeyClass(Text.class);
+      job.setOutputValueClass(Text.class);
+      job.setNumReduceTasks(0);
+
+      // adding cache file
+      assert lastIterationCentroidFilePath != null;
+      job.addCacheFile(new URI(lastIterationCentroidFilePath));
+      FileInputFormat.addInputPath(job, new Path("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\data_set\\data_points.csv"));
+      FileOutputFormat.setOutputPath(job, new Path("problem2_output/final"));
+      job.waitForCompletion(true);
+    }
   }
 
   private static boolean hasConverged(String pathToOutputFile, Double convergenceThreshold) {
