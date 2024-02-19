@@ -237,6 +237,7 @@ public class Task_E {
   }
 
   public static void main(String[] args) throws Exception {
+    long startTime = System.currentTimeMillis();
     Configuration conf = new Configuration();
     int iterations = 20; // max number of iterations parameter here
     double convergenceThreshold = 1.0; // convergence threshold here
@@ -305,6 +306,8 @@ public class Task_E {
       FileOutputFormat.setOutputPath(job, new Path("problem2_output/final"));
       job.waitForCompletion(true);
     }
+    long taskFEndTime = System.currentTimeMillis();
+    System.out.println("Task E Execution Time: " + (taskFEndTime - startTime)/1000.0 + " seconds.");
   }
 
   private static boolean hasConverged(String pathToOutputFile, Double convergenceThreshold) {

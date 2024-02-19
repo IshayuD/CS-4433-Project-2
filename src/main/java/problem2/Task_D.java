@@ -157,6 +157,7 @@ public class Task_D {
   }
 
   public static void main(String[] args) throws Exception {
+    long startTime = System.currentTimeMillis();
     Configuration conf = new Configuration();
     int iterations = 20;
 
@@ -188,6 +189,8 @@ public class Task_D {
       }
     }
 //    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    long taskFEndTime = System.currentTimeMillis();
+    System.out.println("Task D Execution Time: " + (taskFEndTime - startTime)/1000.0 + " seconds.");
   }
 
   private static boolean hasConverged(String pathToOutputFile, Double convergenceThreshold) {

@@ -129,6 +129,7 @@ public class Task_A {
   }
 
   public static void main(String[] args) throws Exception {
+    long startTime = System.currentTimeMillis();
     Configuration conf = new Configuration();
     Job job = Job.getInstance(conf, "Find centroid");
     job.setJarByClass(Task_A.class);
@@ -141,6 +142,8 @@ public class Task_A {
     job.addCacheFile(new URI("file:///C:/schoolMahir/CS4433-BigData/Project2/CS-4433-Project-2/data_set/k_centroids.csv"));
     FileInputFormat.addInputPath(job, new Path("C:\\schoolMahir\\CS4433-BigData\\Project2\\CS-4433-Project-2\\data_set\\data_points.csv"));
     FileOutputFormat.setOutputPath(job, new Path("problem2_output"));
+    long taskFEndTime = System.currentTimeMillis();
+    System.out.println("Task A Execution Time: " + (taskFEndTime - startTime)/1000.0 + " seconds.");
     System.exit(job.waitForCompletion(true) ? 0 : 1);
   }
 }

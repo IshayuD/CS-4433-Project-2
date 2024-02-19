@@ -130,6 +130,7 @@ public class Task_B {
   }
 
   public static void main(String[] args) throws Exception {
+    long startTime = System.currentTimeMillis();
     Configuration conf = new Configuration();
     int iterations = 5;
 
@@ -154,5 +155,7 @@ public class Task_B {
       job.waitForCompletion(true);
     }
 //    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    long taskFEndTime = System.currentTimeMillis();
+    System.out.println("Task B Execution Time: " + (taskFEndTime - startTime)/1000.0 + " seconds.");
   }
 }
