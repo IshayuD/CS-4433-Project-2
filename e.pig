@@ -13,4 +13,4 @@ distinct_pages = FOREACH access_by_owner {
 
 result = JOIN access_count BY page_owner, distinct_pages BY page_owner;
 
-STORE result INTO '/output' USING PigStorage(',');
+STORE result INTO 'e_output' USING PigStorage(',');
