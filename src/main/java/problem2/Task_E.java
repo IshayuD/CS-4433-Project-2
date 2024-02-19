@@ -107,6 +107,64 @@ public class Task_E {
     }
   }
 
+  public static class FinalClusterDataPointsMapper
+          extends Mapper<Object, Text, Text, Text>{
+
+    ArrayList<Point> centroids = new ArrayList<>();
+
+    @Override
+    protected void setup(Context context) throws IOException, InterruptedException {
+      URI[] cacheFiles = context.getCacheFiles();
+      Path path = new Path(cacheFiles[0]);
+
+      FileSystem fs = FileSystem.get(context.getConfiguration());
+      FSDataInputStream fis = fs.open(path);
+
+      BufferedReader reader = new BufferedReader(new InputStreamReader(fis,"UTF-8"));
+
+      String line;
+      while (StringUtils.isNotEmpty(line = reader.readLine())) {
+        String newCentroid = line.split("\t")[0];
+        String[] pointComponents = newCentroid.split(",");
+        double x;
+        double y;
+        try {
+          x = Double.parseDouble(pointComponents[0]);
+          y = Double.parseDouble(pointComponents[1]);
+          centroids.add(new Point(x, y));
+        }
+        catch (NumberFormatException e){
+//          System.out.println("not parsable ints, skipped this line");
+        }
+      }
+//      System.out.println(centroids);
+      IOUtils.closeStream(reader);
+    }
+
+    public void map(Object key, Text value, Context context
+    ) throws IOException, InterruptedException {
+      double lowestDistance = Double.MAX_VALUE;
+      Point nearestCentroid = null;
+      String[] components = value.toString().split(",");
+      try {
+        Point currentPoint = new Point(Double.parseDouble(components[0]), Double.parseDouble(components[1]));
+        for (Point centroid: centroids) {
+          double dist = currentPoint.calculateEuclideanDistance(centroid);
+          if(dist < lowestDistance) {
+            lowestDistance = dist;
+            nearestCentroid = centroid;
+          }
+        }
+        assert nearestCentroid != null;
+        context.write(new Text(nearestCentroid.toString()), new Text(currentPoint.toString()));
+      } catch (NumberFormatException e) {
+//        System.out.println("not parsable ints, skipped this line");
+      } catch (NullPointerException e) {
+        System.out.println("Point nearestCentroid is null");
+      }
+    }
+  }
+
   public static class AggregatorOptimizationCombiner
           extends Reducer<Text, Text, Text, Text> {
     public void reduce(Text key, Iterable<Text> values,
@@ -233,7 +291,7 @@ public class Task_E {
     if (converged && returnFinalClusterDataPoints) {
       Job job = Job.getInstance(conf, "Output final cluster data points");
       job.setJarByClass(Task_E.class);
-      job.setMapperClass(Task_E.ClosestCentroidMapper.class);
+      job.setMapperClass(Task_E.FinalClusterDataPointsMapper.class);
       job.setMapOutputKeyClass(Text.class);
       job.setMapOutputValueClass(Text.class);
       job.setOutputKeyClass(Text.class);
