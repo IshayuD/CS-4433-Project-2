@@ -15,4 +15,4 @@ average = FOREACH groupB GENERATE AVG(c.count) as avg;
 -- Find all above average
 fin = FILTER c BY count > average.avg;
 
-STORE fin INTO 'taskfresults' USING PigStorage(',');
+STORE fin INTO 'taskhresults' USING PigStorage(',');
